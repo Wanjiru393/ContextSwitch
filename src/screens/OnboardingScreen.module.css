@@ -1,0 +1,59 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 24px;
+  padding-bottom: 48px;
+  text-align: center;
+  background-color: #0D0D1A;
+}
+
+.sparkles {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 32px;
+}
+
+.sparkleSmall {
+  align-self: flex-start;
+  margin-top: 4px;
+}
+
+.heading {
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: 38px;
+  font-weight: 600;
+  color: #FFFFFF;
+  margin-bottom: 8px;
+  line-height: 1.05;
+}
+
+.tagline {
+  font-size: 15px;
+  color: #6B7280;
+  margin-bottom: 28px;
+}
+
+.illustration {
+  max-width: 75%;
+  width: 260px;
+  height: auto;
+  margin-bottom: 32px;
+}
+
+.button {
+  width: 100%;
+  padding: 16px 48px;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: inherit;
+  border: none;
+  border-radius: 999px;
+  background-color: #7C3AED;
+  color: #FFFFFF;
+  cursor: pointer;
+  margin-top: auto;
+}

@@ -1,0 +1,66 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding: 24px;
+  background-color: #0D0D1A;
+}
+
+.heading {
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: 26px;
+  font-weight: 600;
+  color: #FFFFFF;
+  margin-bottom: 4px;
+  text-align: left;
+  line-height: 1.1;
+}
+
+.subtext {
+  font-size: 14px;
+  color: #6B7280;
+  margin-bottom: 20px;
+}
+
+.textarea {
+  flex: 1;
+  min-height: 300px;
+  padding: 16px;
+  font-size: 16px;
+  font-family: inherit;
+  border: none;
+  border-radius: 12px;
+  resize: vertical;
+  background-color: #1A1A2E;
+  color: #FFFFFF;
+}
+
+.textarea::placeholder {
+  color: #6B7280;
+}
+
+.footer {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.counter {
+  font-size: 14px;
+  color: #6B7280;
+  text-align: right;
+}
+
+.button {
+  width: 100%;
+  padding: 16px 48px;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: inherit;
+  border: none;
+  border-radius: 999px;
+  background-color: #7C3AED;
+  color: #FFFFFF;
+  cursor: pointer;
+}
