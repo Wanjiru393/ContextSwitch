@@ -1,6 +1,8 @@
-// SignInScreen: mock sign-in form with brand header, labels, eye toggle, and Google button
+// SignInScreen: real Supabase sign-in with loading state and inline error messages
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "../lib/supabase";
+import { useSession } from "../context/SessionContext";
 import styles from "./SignInScreen.module.css";
 
 // Soft 4-point diamond sparkle for brand header
@@ -17,11 +19,40 @@ function SparkleIcon() {
 
 export default function SignInScreen() {
   const navigate = useNavigate();
+  const { setUser, setSession } = useSession();
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleSignIn = (e) => {
+  const handleSignIn = async (e) => {
     e.preventDefault();
-    navigate("/brain-dump");
+    setError("");
+    setLoading(true);
+
+    const formData = new FormData(e.target);
+    const email = formData.get("email");
+    const password = formData.get("password");
+
+    try {
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (authError) {
+        setError(authError.message);
+        setLoading(false);
+        return;
+      }
+
+      setUser(data.user);
+      setSession(data.session);
+      navigate("/brain-dump");
+    } catch (err) {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -36,15 +67,17 @@ export default function SignInScreen() {
       <form className={styles.form} onSubmit={handleSignIn}>
         <div className={styles.fieldGroup}>
           <label className={styles.label}>Email Address</label>
-          <input className={styles.input} type="email" placeholder="Email" />
+          <input className={styles.input} name="email" type="email" placeholder="Email" required />
         </div>
         <div className={styles.fieldGroup}>
           <label className={styles.label}>Password</label>
           <div className={styles.passwordWrapper}>
             <input
               className={styles.input}
+              name="password"
               type={showPassword ? "text" : "password"}
               placeholder="Password"
+              required
             />
             <button
               type="button"
@@ -68,7 +101,14 @@ export default function SignInScreen() {
           </div>
         </div>
         <span className={styles.forgotLink}>Forgot Password?</span>
-        <button className={styles.button} type="submit">Sign in</button>
+        {error && (
+          <p style={{ color: "#EF4444", fontSize: "13px", marginTop: "-8px", textAlign: "center" }}>
+            {error}
+          </p>
+        )}
+        <button className={styles.button} type="submit" disabled={loading}>
+          {loading ? "Signing in..." : "Sign in"}
+        </button>
       </form>
 
       <button
