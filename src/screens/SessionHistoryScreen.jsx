@@ -1,6 +1,6 @@
-// SessionHistoryScreen: shows past session history with expandable cards,
-// grouped thought buckets, and drag-and-drop inside expanded sessions
-import { useState, useCallback } from "react";
+// SessionHistoryScreen: shows real past session history fetched from the backend,
+// with expandable cards, grouped thought buckets, and drag-and-drop inside expanded sessions
+import { useState, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { useSession } from "../context/SessionContext";
@@ -9,87 +9,6 @@ import styles from "./SessionHistoryScreen.module.css";
 // Stable unique ID generator
 let _id = 0;
 const uid = () => `s${++_id}`;
-
-// Mock session data with actual thought arrays per bucket
-const initialSessions = [
-  {
-    date: "Tonight",
-    thoughts: {
-      tomorrow: [
-        { id: uid(), text: "Buy groceries for tomorrow" },
-        { id: uid(), text: "Call dentist to reschedule" },
-        { id: uid(), text: "Finish the report draft" },
-      ],
-      later: [
-        { id: uid(), text: "Read that book everyone mentioned" },
-        { id: uid(), text: "Look into yoga classes nearby" },
-      ],
-      notYourProblem: [
-        { id: uid(), text: "What if the presentation goes badly?" },
-        { id: uid(), text: "Am I even good enough for this role?" },
-      ],
-    },
-  },
-  {
-    date: "Wed 26 Mar",
-    thoughts: {
-      tomorrow: [
-        { id: uid(), text: "Email Sarah about the project" },
-        { id: uid(), text: "Schedule car service" },
-        { id: uid(), text: "Pick up prescription" },
-        { id: uid(), text: "Review budget spreadsheet" },
-        { id: uid(), text: "Send birthday card to mum" },
-      ],
-      later: [
-        { id: uid(), text: "Organise the garage" },
-        { id: uid(), text: "Research holiday destinations" },
-        { id: uid(), text: "Update LinkedIn profile" },
-        { id: uid(), text: "Fix the leaky tap" },
-      ],
-      notYourProblem: [
-        { id: uid(), text: "What if I never figure out my career?" },
-        { id: uid(), text: "Am I spending enough time with friends?" },
-        { id: uid(), text: "What if something bad happens to the dog?" },
-      ],
-    },
-  },
-  {
-    date: "Tue 25 Mar",
-    thoughts: {
-      tomorrow: [
-        { id: uid(), text: "Submit the expense report" },
-        { id: uid(), text: "Buy a new phone charger" },
-      ],
-      later: [
-        { id: uid(), text: "Clean out the fridge" },
-        { id: uid(), text: "Watch that documentary" },
-      ],
-      notYourProblem: [
-        { id: uid(), text: "What if they didn't like my idea?" },
-      ],
-    },
-  },
-  {
-    date: "Mon 24 Mar",
-    thoughts: {
-      tomorrow: [
-        { id: uid(), text: "Prepare meeting agenda" },
-        { id: uid(), text: "Return library books" },
-        { id: uid(), text: "Order new running shoes" },
-        { id: uid(), text: "Text Jake about Saturday" },
-      ],
-      later: [
-        { id: uid(), text: "Learn to make sourdough" },
-        { id: uid(), text: "Back up the laptop" },
-        { id: uid(), text: "Sort through old photos" },
-      ],
-      notYourProblem: [
-        { id: uid(), text: "Am I falling behind everyone else?" },
-        { id: uid(), text: "What if I made the wrong decision?" },
-      ],
-    },
-  },
-];
 
 // Bucket display config
 const BUCKETS = [
@@ -130,11 +49,75 @@ function bucketCounts(thoughts) {
   };
 }
 
+// Format ISO date string to a friendly display format
+function formatDate(isoString) {
+  const date = new Date(isoString);
+  const now = new Date();
+  const diffMs = now - date;
+  const diffMins = Math.floor(diffMs / 60000);
+
+  // Show "Just now" / "X mins ago" / "X hours ago" for today
+  if (diffMins < 1) return "Just now";
+  if (diffMins < 60) return `${diffMins} min${diffMins !== 1 ? "s" : ""} ago`;
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? "s" : ""} ago`;
+
+  // Otherwise show a date string
+  return date.toLocaleDateString("en-AU", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  });
+}
+
+// Transform API session into the shape the UI expects
+function mapSession(apiSession) {
+  const thoughts = {
+    tomorrow: (apiSession.bucket_tomorrow || []).map((text) => ({ id: uid(), text })),
+    later: (apiSession.bucket_later || []).map((text) => ({ id: uid(), text })),
+    notYourProblem: (apiSession.bucket_not_your_problem || []).map((text) => ({ id: uid(), text })),
+  };
+  return {
+    id: apiSession.id,
+    date: formatDate(apiSession.created_at),
+    thoughts,
+  };
+}
+
 export default function SessionHistoryScreen() {
   const navigate = useNavigate();
-  const { resetSession } = useSession();
-  const [sessions, setSessions] = useState(initialSessions);
+  const { resetSession, session } = useSession();
+  const [sessions, setSessions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(null);
   const [expandedIndex, setExpandedIndex] = useState(null);
+
+  // Fetch real sessions on mount
+  useEffect(() => {
+    const fetchSessions = async () => {
+      if (!session?.access_token) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/sessions/list", {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+
+        if (!res.ok) throw new Error("Failed to load sessions");
+
+        const data = await res.json();
+        setSessions((data.sessions || []).map(mapSession));
+      } catch (err) {
+        setFetchError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSessions();
+  }, [session]);
 
   const handleNewSession = () => {
     resetSession();
@@ -155,25 +138,23 @@ export default function SessionHistoryScreen() {
 
       setSessions((prev) => {
         const updated = [...prev];
-        const session = { ...updated[expandedIndex] };
+        const sess = { ...updated[expandedIndex] };
         const thoughts = {
-          tomorrow: [...session.thoughts.tomorrow],
-          later: [...session.thoughts.later],
-          notYourProblem: [...session.thoughts.notYourProblem],
+          tomorrow: [...sess.thoughts.tomorrow],
+          later: [...sess.thoughts.later],
+          notYourProblem: [...sess.thoughts.notYourProblem],
         };
 
         if (srcBucket === destBucket) {
-          // Reorder within same bucket
           const [moved] = thoughts[srcBucket].splice(source.index, 1);
           thoughts[srcBucket].splice(destination.index, 0, moved);
         } else {
-          // Move between buckets
           const [moved] = thoughts[srcBucket].splice(source.index, 1);
           thoughts[destBucket].splice(destination.index, 0, moved);
         }
 
-        session.thoughts = thoughts;
-        updated[expandedIndex] = session;
+        sess.thoughts = thoughts;
+        updated[expandedIndex] = sess;
         return updated;
       });
     },
@@ -186,98 +167,123 @@ export default function SessionHistoryScreen() {
         <h1 className={styles.heading}>Your sessions</h1>
         <div className={styles.badge}>
           <span className={styles.moonEmoji}>🌙</span>
-          <span className={styles.nightsPill}>7 nights</span>
+          <span className={styles.nightsPill}>{sessions.length} night{sessions.length !== 1 ? "s" : ""}</span>
         </div>
       </div>
 
-      <div className={styles.sessions}>
-        {sessions.map((session, i) => {
-          const counts = bucketCounts(session.thoughts);
-          const isExpanded = expandedIndex === i;
+      {loading && (
+        <div className={styles.sessions}>
+          <p style={{ color: "#6B7280", fontSize: "14px", textAlign: "center", marginTop: "48px" }}>
+            Loading your sessions...
+          </p>
+        </div>
+      )}
 
-          return (
-            <div key={i} className={`${styles.card} ${isExpanded ? styles.cardExpanded : ""}`}>
-              {/* Card header — always visible, clickable */}
-              <div className={styles.cardHeader} onClick={() => toggleExpand(i)}>
-                <div className={styles.cardLeft}>
-                  <span className={styles.date}>{session.date}</span>
-                  <span className={styles.count}>
-                    {counts.total} thought{counts.total !== 1 ? "s" : ""}
-                  </span>
-                </div>
-                <div className={styles.cardRight}>
-                  <span className={styles.pillTomorrow}>{counts.tomorrow} tmrw</span>
-                  <span className={styles.pillLater}>{counts.later} later</span>
-                  <Chevron expanded={isExpanded} />
-                </div>
-              </div>
+      {!loading && fetchError && (
+        <div className={styles.sessions}>
+          <p style={{ color: "#EF4444", fontSize: "14px", textAlign: "center", marginTop: "48px" }}>
+            Couldn't load sessions — try again later.
+          </p>
+        </div>
+      )}
 
-              {/* Expanded content — grouped buckets with drag-and-drop */}
-              {isExpanded && (
-                <DragDropContext onDragEnd={handleDragEnd}>
-                  <div className={styles.expandedContent}>
-                    {BUCKETS.map((bucket) => {
-                      const items = session.thoughts[bucket.key];
-                      return (
-                        <div key={bucket.key} className={styles.bucketSection}>
-                          <h3
-                            className={styles.bucketTitle}
-                            style={{ color: bucket.color }}
-                          >
-                            {bucket.label}
-                          </h3>
-                          <Droppable droppableId={bucket.key}>
-                            {(provided, snapshot) => (
-                              <div
-                                className={styles.bucketCards}
-                                ref={provided.innerRef}
-                                {...provided.droppableProps}
-                              >
-                                {items.length === 0 && !snapshot.isDraggingOver && (
-                                  <p className={styles.bucketEmpty}>No thoughts here</p>
-                                )}
-                                {items.map((item, idx) => (
-                                  <Draggable
-                                    key={item.id}
-                                    draggableId={item.id}
-                                    index={idx}
-                                  >
-                                    {(prov, snap) => (
-                                      <div
-                                        className={styles.thoughtCard}
-                                        ref={prov.innerRef}
-                                        {...prov.draggableProps}
-                                        {...prov.dragHandleProps}
-                                        style={{
-                                          ...prov.draggableProps.style,
-                                          opacity: snap.isDragging ? 0.8 : 1,
-                                          borderLeft: `2px solid ${bucket.color}`,
-                                        }}
-                                      >
-                                        <span className={styles.thoughtText}>
-                                          {item.text}
-                                        </span>
-                                      </div>
-                                    )}
-                                  </Draggable>
-                                ))}
-                                {provided.placeholder}
-                              </div>
-                            )}
-                          </Droppable>
-                        </div>
-                      );
-                    })}
+      {!loading && !fetchError && sessions.length === 0 && (
+        <div className={styles.sessions}>
+          <p style={{ color: "#6B7280", fontSize: "14px", textAlign: "center", marginTop: "48px" }}>
+            No sessions yet. Dump your first thoughts!
+          </p>
+        </div>
+      )}
+
+      {!loading && !fetchError && sessions.length > 0 && (
+        <div className={styles.sessions}>
+          {sessions.map((sess, i) => {
+            const counts = bucketCounts(sess.thoughts);
+            const isExpanded = expandedIndex === i;
+
+            return (
+              <div key={sess.id || i} className={`${styles.card} ${isExpanded ? styles.cardExpanded : ""}`}>
+                {/* Card header — always visible, clickable */}
+                <div className={styles.cardHeader} onClick={() => toggleExpand(i)}>
+                  <div className={styles.cardLeft}>
+                    <span className={styles.date}>{sess.date}</span>
+                    <span className={styles.count}>
+                      {counts.total} thought{counts.total !== 1 ? "s" : ""}
+                    </span>
                   </div>
-                </DragDropContext>
-              )}
-            </div>
-          );
-        })}
-      </div>
+                  <div className={styles.cardRight}>
+                    <span className={styles.pillTomorrow}>{counts.tomorrow} tmrw</span>
+                    <span className={styles.pillLater}>{counts.later} later</span>
+                    <Chevron expanded={isExpanded} />
+                  </div>
+                </div>
+
+                {/* Expanded content — grouped buckets with drag-and-drop */}
+                {isExpanded && (
+                  <DragDropContext onDragEnd={handleDragEnd}>
+                    <div className={styles.expandedContent}>
+                      {BUCKETS.map((bucket) => {
+                        const items = sess.thoughts[bucket.key];
+                        return (
+                          <div key={bucket.key} className={styles.bucketSection}>
+                            <h3
+                              className={styles.bucketTitle}
+                              style={{ color: bucket.color }}
+                            >
+                              {bucket.label}
+                            </h3>
+                            <Droppable droppableId={bucket.key}>
+                              {(provided, snapshot) => (
+                                <div
+                                  className={styles.bucketCards}
+                                  ref={provided.innerRef}
+                                  {...provided.droppableProps}
+                                >
+                                  {items.length === 0 && !snapshot.isDraggingOver && (
+                                    <p className={styles.bucketEmpty}>No thoughts here</p>
+                                  )}
+                                  {items.map((item, idx) => (
+                                    <Draggable
+                                      key={item.id}
+                                      draggableId={item.id}
+                                      index={idx}
+                                    >
+                                      {(prov, snap) => (
+                                        <div
+                                          className={styles.thoughtCard}
+                                          ref={prov.innerRef}
+                                          {...prov.draggableProps}
+                                          {...prov.dragHandleProps}
+                                          style={{
+                                            ...prov.draggableProps.style,
+                                            opacity: snap.isDragging ? 0.8 : 1,
+                                            borderLeft: `2px solid ${bucket.color}`,
+                                          }}
+                                        >
+                                          <span className={styles.thoughtText}>
+                                            {item.text}
+                                          </span>
+                                        </div>
+                                      )}
+                                    </Draggable>
+                                  ))}
+                                  {provided.placeholder}
+                                </div>
+                              )}
+                            </Droppable>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </DragDropContext>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       <div className={styles.footerSection}>
-        <p className={styles.localOnly}>Local only &middot; No account needed</p>
         <button className={styles.button} onClick={handleNewSession}>
           + New Session
         </button>

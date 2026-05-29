@@ -1,9 +1,47 @@
-// CompletionScreen: reassurance screen — green sparkles, serif heading, outlined DONE button
+// CompletionScreen: reassurance screen — auto-saves session to backend on load, shows save status
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { useSession } from "../context/SessionContext";
 import styles from "./CompletionScreen.module.css";
 
 export default function CompletionScreen() {
   const navigate = useNavigate();
+  const { brainDumpText, categorisedThoughts, session } = useSession();
+  const [saveStatus, setSaveStatus] = useState("saving"); // "saving" | "saved" | "error"
+  const hasSaved = useRef(false);
+
+  useEffect(() => {
+    if (hasSaved.current) return;
+    hasSaved.current = true;
+
+    const saveSession = async () => {
+      if (!session?.access_token || !categorisedThoughts) {
+        setSaveStatus("error");
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/sessions/save", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            brain_dump_text: brainDumpText,
+            buckets: categorisedThoughts,
+          }),
+        });
+
+        if (!res.ok) throw new Error("Save failed");
+        setSaveStatus("saved");
+      } catch {
+        setSaveStatus("error");
+      }
+    };
+
+    saveSession();
+  }, [brainDumpText, categorisedThoughts, session]);
 
   return (
     <div className={styles.container}>
@@ -32,7 +70,11 @@ export default function CompletionScreen() {
       <button className={styles.button} onClick={() => navigate("/history")}>
         DONE
       </button>
-      <p className={styles.footer}>Session saved &middot; Sleep well</p>
+      <p className={styles.footer}>
+        {saveStatus === "saving" && "Saving your thoughts..."}
+        {saveStatus === "saved" && "Session saved · Sleep well"}
+        {saveStatus === "error" && "Save failed — that's OK, sleep well"}
+      </p>
     </div>
   );
 }

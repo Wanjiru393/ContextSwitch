@@ -63,7 +63,7 @@ function reorder(state, source, destination) {
 
 export default function SortedThoughtsScreen() {
   const navigate = useNavigate();
-  const { brainDumpText } = useSession();
+  const { brainDumpText, setCategorisedThoughts } = useSession();
 
   // Initialise buckets from categorisation, with stable IDs
   const [buckets, setBuckets] = useState(() => {
@@ -127,7 +127,14 @@ export default function SortedThoughtsScreen() {
           </div>
         ))}
 
-        <button className={styles.button} onClick={() => navigate("/completion")}>
+        <button className={styles.button} onClick={() => {
+          setCategorisedThoughts({
+            tomorrow: buckets.tomorrow.map((t) => t.text),
+            later: buckets.later.map((t) => t.text),
+            notYourProblem: buckets.notYourProblem.map((t) => t.text),
+          });
+          navigate("/completion");
+        }}>
           I'm done with these
         </button>
       </div>
