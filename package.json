@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:api": ".venv/bin/uvicorn api.app:app --reload --port 8000",
+    "dev:all": "npm run dev:api & npm run dev",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
