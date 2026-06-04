@@ -1,4 +1,4 @@
-// App.jsx: central router — all 7 screens connected via React Router v6, wrapped in SessionProvider
+// App.jsx: central router — protected routes and auth handling via React Router v6
 import { useEffect } from "react";
 import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import { SessionProvider, useSession } from "./context/SessionContext";
@@ -10,6 +10,13 @@ import BrainDumpScreen from "./screens/BrainDumpScreen";
 import SortedThoughtsScreen from "./screens/SortedThoughtsScreen";
 import CompletionScreen from "./screens/CompletionScreen";
 import SessionHistoryScreen from "./screens/SessionHistoryScreen";
+
+// Redirects to /signin if user is not authenticated
+function ProtectedRoute({ children }) {
+  const { user } = useSession();
+  if (!user) return <Navigate to="/signin" replace />;
+  return children;
+}
 
 // Listens for Supabase auth state changes (e.g. OAuth redirect callback)
 // and stores user/session in context, then navigates to brain dump
@@ -42,10 +49,10 @@ export default function App() {
         <Route path="/" element={<OnboardingScreen />} />
         <Route path="/signin" element={<SignInScreen />} />
         <Route path="/signup" element={<SignUpScreen />} />
-        <Route path="/brain-dump" element={<BrainDumpScreen />} />
-        <Route path="/sorted" element={<SortedThoughtsScreen />} />
-        <Route path="/completion" element={<CompletionScreen />} />
-        <Route path="/history" element={<SessionHistoryScreen />} />
+        <Route path="/brain-dump" element={<ProtectedRoute><BrainDumpScreen /></ProtectedRoute>} />
+        <Route path="/sorted" element={<ProtectedRoute><SortedThoughtsScreen /></ProtectedRoute>} />
+        <Route path="/completion" element={<ProtectedRoute><CompletionScreen /></ProtectedRoute>} />
+        <Route path="/history" element={<ProtectedRoute><SessionHistoryScreen /></ProtectedRoute>} />
         {/* Catch-all redirect to onboarding */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

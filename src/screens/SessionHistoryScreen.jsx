@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import { supabase } from "../lib/supabase";
 import { useSession } from "../context/SessionContext";
 import styles from "./SessionHistoryScreen.module.css";
 
@@ -86,7 +87,7 @@ function mapSession(apiSession) {
 
 export default function SessionHistoryScreen() {
   const navigate = useNavigate();
-  const { resetSession, session } = useSession();
+  const { resetSession, session, setUser, setSession } = useSession();
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(null);
@@ -118,6 +119,13 @@ export default function SessionHistoryScreen() {
 
     fetchSessions();
   }, [session]);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+    setSession(null);
+    navigate("/");
+  };
 
   const handleNewSession = () => {
     resetSession();
@@ -168,6 +176,12 @@ export default function SessionHistoryScreen() {
         <div className={styles.badge}>
           <span className={styles.moonEmoji}>🌙</span>
           <span className={styles.nightsPill}>{sessions.length} night{sessions.length !== 1 ? "s" : ""}</span>
+          <span
+            onClick={handleSignOut}
+            style={{ fontSize: "12px", color: "#6B7280", cursor: "pointer", marginLeft: "8px" }}
+          >
+            Sign out
+          </span>
         </div>
       </div>
 
