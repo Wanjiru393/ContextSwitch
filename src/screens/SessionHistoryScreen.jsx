@@ -176,12 +176,6 @@ export default function SessionHistoryScreen() {
         <div className={styles.badge}>
           <span className={styles.moonEmoji}>🌙</span>
           <span className={styles.nightsPill}>{sessions.length} night{sessions.length !== 1 ? "s" : ""}</span>
-          <span
-            onClick={handleSignOut}
-            style={{ fontSize: "12px", color: "#6B7280", cursor: "pointer", marginLeft: "8px" }}
-          >
-            Sign out
-          </span>
         </div>
       </div>
 
@@ -301,6 +295,12 @@ export default function SessionHistoryScreen() {
         <button className={styles.button} onClick={handleNewSession}>
           + New Session
         </button>
+        <span
+          onClick={handleSignOut}
+          style={{ fontSize: "13px", color: "#6B7280", cursor: "pointer", marginTop: "16px" }}
+        >
+          Sign out
+        </span>
       </div>
     </div>
   );

@@ -5,15 +5,24 @@ import { supabase } from "../lib/supabase";
 import { useSession } from "../context/SessionContext";
 import styles from "./SignInScreen.module.css";
 
-// Soft 4-point diamond sparkle for brand header
-function SparkleIcon() {
+// Soft 4-point diamond sparkles matching onboarding screen
+function Sparkles() {
   return (
-    <svg width="28" height="28" viewBox="0 0 64 64" fill="none">
-      <path
-        d="M32 2 C34 14, 38 22, 42 26 C46 30, 54 32, 62 32 C54 32, 46 34, 42 38 C38 42, 34 50, 32 62 C30 50, 26 42, 22 38 C18 34, 10 32, 2 32 C10 32, 18 30, 22 26 C26 22, 30 14, 32 2 Z"
-        fill="#7C3AED"
-      />
-    </svg>
+    <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "8px" }}>
+      <svg width="56" height="56" viewBox="0 0 64 64" fill="none">
+        <path
+          d="M32 2 C34 14, 38 22, 42 26 C46 30, 54 32, 62 32 C54 32, 46 34, 42 38 C38 42, 34 50, 32 62 C30 50, 26 42, 22 38 C18 34, 10 32, 2 32 C10 32, 18 30, 22 26 C26 22, 30 14, 32 2 Z"
+          fill="#7C3AED"
+        />
+      </svg>
+      <svg width="28" height="28" viewBox="0 0 64 64" fill="none" style={{ alignSelf: "flex-start", marginTop: "4px" }}>
+        <path
+          d="M32 2 C34 14, 38 22, 42 26 C46 30, 54 32, 62 32 C54 32, 46 34, 42 38 C38 42, 34 50, 32 62 C30 50, 26 42, 22 38 C18 34, 10 32, 2 32 C10 32, 18 30, 22 26 C26 22, 30 14, 32 2 Z"
+          fill="#7C3AED"
+          opacity="0.5"
+        />
+      </svg>
+    </div>
   );
 }
 
@@ -57,10 +66,8 @@ export default function SignInScreen() {
 
   return (
     <div className={styles.container}>
-      <div className={styles.brand}>
-        <SparkleIcon />
-        <span className={styles.brandName}>ContextSwitch</span>
-      </div>
+      <Sparkles />
+      <span className={styles.brandName} style={{ marginBottom: "16px" }}>ContextSwitch</span>
 
       <h1 className={styles.heading}>Welcome Back!</h1>
 
