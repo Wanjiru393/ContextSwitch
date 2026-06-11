@@ -10,6 +10,7 @@ import styles from "./SessionHistoryScreen.module.css";
 // Stable unique ID generator
 let _id = 0;
 const uid = () => `s${++_id}`;
+const SESSION_LIMIT = 6;
 
 // Bucket display config
 const BUCKETS = [
@@ -36,6 +37,18 @@ function Chevron({ expanded }) {
       }}
     >
       <path d="M4 6 L8 10 L12 6" />
+    </svg>
+  );
+}
+
+// Small trash icon for delete button
+function TrashIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+      <line x1="10" y1="11" x2="10" y2="17" />
+      <line x1="14" y1="11" x2="14" y2="17" />
     </svg>
   );
 }
@@ -92,6 +105,7 @@ export default function SessionHistoryScreen() {
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(null);
   const [expandedIndex, setExpandedIndex] = useState(null);
+  const [showAll, setShowAll] = useState(false);
 
   // Fetch real sessions on mount
   useEffect(() => {
@@ -132,6 +146,13 @@ export default function SessionHistoryScreen() {
     navigate("/brain-dump");
   };
 
+  // Delete a session from Supabase and local state
+  const handleDelete = async (sessionId, event) => {
+    event.stopPropagation();
+    try { await supabase.from("sessions").delete().eq("id", sessionId); } catch { /* silent */ }
+    setSessions((prev) => prev.filter((s) => s.id !== sessionId));
+  };
+
   const toggleExpand = (index) => {
     setExpandedIndex((prev) => (prev === index ? null : index));
   };
@@ -169,6 +190,9 @@ export default function SessionHistoryScreen() {
     [expandedIndex]
   );
 
+  const visibleSessions = showAll ? sessions : sessions.slice(0, SESSION_LIMIT);
+  const hasMore = sessions.length > SESSION_LIMIT;
+
   return (
     <div className={styles.container}>
       <div className={styles.header}>
@@ -205,7 +229,7 @@ export default function SessionHistoryScreen() {
 
       {!loading && !fetchError && sessions.length > 0 && (
         <div className={styles.sessions}>
-          {sessions.map((sess, i) => {
+          {visibleSessions.map((sess, i) => {
             const counts = bucketCounts(sess.thoughts);
             const isExpanded = expandedIndex === i;
 
@@ -222,6 +246,7 @@ export default function SessionHistoryScreen() {
                   <div className={styles.cardRight}>
                     <span className={styles.pillTomorrow}>{counts.tomorrow} tmrw</span>
                     <span className={styles.pillLater}>{counts.later} later</span>
+                    <span className={styles.deleteBtn} onClick={(e) => handleDelete(sess.id, e)} title="Delete session"><TrashIcon /></span>
                     <Chevron expanded={isExpanded} />
                   </div>
                 </div>
@@ -288,6 +313,7 @@ export default function SessionHistoryScreen() {
               </div>
             );
           })}
+          {hasMore && !showAll && <span className={styles.viewMore} onClick={() => setShowAll(true)}>View more ({sessions.length - SESSION_LIMIT} more)</span>}
         </div>
       )}
 
@@ -295,12 +321,9 @@ export default function SessionHistoryScreen() {
         <button className={styles.button} onClick={handleNewSession}>
           + New Session
         </button>
-        <span
-          onClick={handleSignOut}
-          style={{ fontSize: "13px", color: "#6B7280", cursor: "pointer", marginTop: "16px" }}
-        >
+        <button className={styles.buttonOutline} onClick={handleSignOut}>
           Sign out
-        </span>
+        </button>
       </div>
     </div>
   );
