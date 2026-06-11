@@ -181,3 +181,41 @@
   color: #0D0D1A;
   cursor: pointer;
 }
+.buttonOutline {
+  width: 100%;
+  padding: 14px 48px;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: inherit;
+  border: 1.5px solid #ffffff;
+  border-radius: 999px;
+  background: transparent;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.deleteBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 2px;
+  opacity: 0.7;
+}
+
+.deleteBtn:hover {
+  opacity: 1;
+}
+
+.viewMore {
+  display: block;
+  text-align: center;
+  color: #6B7280;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 12px 0;
+}
+
+.viewMore:hover {
+  color: #ffffff;
+}
