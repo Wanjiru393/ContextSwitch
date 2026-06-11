@@ -52,7 +52,8 @@ api/
 │   └── supabase_client.py     # Supabase admin client init
 └── sessions/
     ├── save.py                # POST /api/sessions/save
-    └── list.py                # GET /api/sessions/list
+    ├── list.py                # GET /api/sessions/list
+    └── delete.py              # DELETE /api/sessions/delete
 ```
 
 ## Environment Variables
