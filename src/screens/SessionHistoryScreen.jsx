@@ -149,7 +149,7 @@ export default function SessionHistoryScreen() {
   // Delete a session from Supabase and local state
   const handleDelete = async (sessionId, event) => {
     event.stopPropagation();
-    try { await supabase.from("sessions").delete().eq("id", sessionId); } catch { /* silent */ }
+    try { await fetch("/api/sessions/delete", { method: "DELETE", headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` }, body: JSON.stringify({ session_id: sessionId }) }); } catch { /* silent */ }
     setSessions((prev) => prev.filter((s) => s.id !== sessionId));
   };
 
